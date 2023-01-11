@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import sys
 
 # Set this to True to use the C-accelerated implementation.
-use_c = True
+use_c = False
 
 # Prepare to load C library
 heateqclib = None
@@ -54,7 +54,7 @@ def apply_stencil(data, width, height, offset, alpha = 0.2):
 # Helper method to create visualization of the steps
 def plot_image(data, width, height, iteration):
     plt.imshow(np.reshape(data, (width, height)), interpolation="none")
-    plt.savefig("plots/fig-%sx%s-step%s.pdf" % (width, height, iteration))
+    plt.savefig("plots/fig-%sx%s-step%s.png" % (width, height, iteration))
 
 
 # Computes the average elementwise difference between two arrays

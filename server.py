@@ -42,13 +42,15 @@ class Simulation:
     def render(self):
         span = np.max(self.data) - np.min(self.data)
         scale = np.uint8((np.reshape(self.data, (self.width, self.height))-np.min(self.data))/span*255)
-        return colormap.colormap[scale]
+        print(colormap.colormap[scale].shape)
+        return np.reshape(colormap.colormap[scale], (self.width, self.height*3))
+    
 
 instance = Simulation(width, height)
 
 class RequestHandler(SimpleHTTPRequestHandler):
     def __init__(self, request, client_address, server):
-        self.pngwriter = png.Writer(width=instance.width, height=instance.height, alpha=False)
+        self.pngwriter = png.Writer(width=instance.width, height=instance.height, greyscale=False, alpha=False)
         super().__init__(request, client_address, server)
 
     def do_POST(self):
@@ -64,7 +66,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
         self.pngwriter.write(out, img)
         self.wfile.write(base64.b64encode(out.getvalue()))
 
-def run_server(server_address=('', 8000)):
+def run_server(server_address=('', 8080)):
     httpd = HTTPServer(server_address, RequestHandler)
     httpd.serve_forever()
 
