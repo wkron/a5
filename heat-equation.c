@@ -33,6 +33,27 @@ void apply_stencil(float* data, size_t width, size_t height, size_t offset, floa
     }
 }
 
+void apply_stencil_red(float* data, size_t width, size_t height, size_t offset, float alpha) {
+    for (size_t x = 1; x < width-1; x++){
+        for (size_t y = 1 + ((x+offset)%2); y< height-1; y+=2){
+            if(x+ y % 2 == 1){
+                data[pos(width, x, y)] = stencil(data, width, x, y, alpha);
+            }
+        }
+    }
+}
+
+void apply_stencil_black(float* data, size_t width, size_t height, size_t offset, float alpha) {
+    for (size_t x = 1; x < width-1; x++){
+        for (size_t y = 1 + ((x+offset)%2); y< height-1; y+=2){
+            if(x+ y % 2 == 0){
+                data[pos(width, x, y)] = stencil(data, width, x, y, alpha);
+            }
+        }
+    }
+}
+
+
 float compute_delta(float* data, float* prev, size_t width, size_t height) {
     float res = 0.0;
     for (size_t x = 0; x < width; x++){
@@ -63,7 +84,11 @@ void run_simulation(size_t width, size_t height, size_t steps, const char* filen
         {
             #pragma omp section
             {
-                apply_stencil(data, width, height, n % 2, 0.2f);
+                apply_stencil_red(data, width, height, n % 2, 0.2f);
+            }
+            #pragma omp section
+            {
+                apply_stencil_black(data, width, height, n % 2, 0.2f);
             }
             #pragma omp section
             {
