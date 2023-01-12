@@ -4,9 +4,10 @@ import ctypes
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import time
 
 # Set this to True to use the C-accelerated implementation.
-use_c = False
+use_c = True
 
 # Prepare to load C library
 heateqclib = None
@@ -102,15 +103,18 @@ def run_simulation(width, height, steps):
     print("After %d iterations, delta was: %f" % (n+1, delta))
 
     # Make 2D for plotting
-    plt.imshow(np.reshape(data, (width, height)), interpolation="none")
-    plt.show()
+    # plt.imshow(np.reshape(data, (width, height)), interpolation="none")
+    # plt.show()
 
 if __name__ == "__main__":
     if use_c:
         use_clib()
 
-    n = 50 if len(sys.argv) < 2 else int(sys.argv[1])
-    m = 50 if len(sys.argv) < 3 else int(sys.argv[2])
-    s = 100 if len(sys.argv) < 4 else int(sys.argv[3])
+    n = 500 if len(sys.argv) < 2 else int(sys.argv[1])
+    m = 500 if len(sys.argv) < 3 else int(sys.argv[2])
+    s = 500 if len(sys.argv) < 4 else int(sys.argv[3])
 
+    start = time.time()
     run_simulation(n, m, s)
+    end = time.time()
+    print(end-start, " seconds")

@@ -11,7 +11,7 @@ import importlib
 heat2d = importlib.import_module("heat2d")
 
 # The size of the simulated grid.
-width, height = (200, 200)
+width, height = (502, 502)
 
 # The number of simulation steps to take per rendered frame.  Increase
 # this to spend more time on compute and less time on graphics.  You
@@ -42,7 +42,7 @@ class Simulation:
     def render(self):
         span = np.max(self.data) - np.min(self.data)
         scale = np.uint8((np.reshape(self.data, (self.width, self.height))-np.min(self.data))/span*255)
-        print(colormap.colormap[scale].shape)
+        # print(colormap.colormap[scale].shape)
         return np.reshape(colormap.colormap[scale], (self.width, self.height*3))
     
 

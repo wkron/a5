@@ -25,7 +25,9 @@ float stencil(float* data, size_t width, size_t x, size_t y, float alpha) {
     return alpha * (data[pos(width, x,y)] + data[pos(width, x-1,y)] + data[pos(width, x+1,y)] + data[pos(width, x,y-1)] + data[pos(width, x,y+1)]);
 }
 
-void apply_stencil(float* data, size_t width, size_t height, size_t offset, float alpha) {
+
+// The function used is the one called apply_stencil, so rename these when testing
+void apply_stencil_naive(float* data, size_t width, size_t height, size_t offset, float alpha) {
     for (size_t x = 1; x < width-1; x++){
         for (size_t y = 1 + ((x+offset)%2); y< height-1; y+=2){
             data[pos(width, x, y)] = stencil(data, width, x, y, alpha);
@@ -33,35 +35,45 @@ void apply_stencil(float* data, size_t width, size_t height, size_t offset, floa
     }
 }
 
-void apply_stencil_red(float* data, size_t width, size_t height, size_t offset, float alpha) {
+void apply_stencil(float* data, size_t width, size_t height, size_t offset, float alpha) {
+    #pragma omp parallel for
     for (size_t x = 1; x < width-1; x++){
         for (size_t y = 1 + ((x+offset)%2); y< height-1; y+=2){
-            if(x+ y % 2 == 1){
-                data[pos(width, x, y)] = stencil(data, width, x, y, alpha);
-            }
+            data[pos(width, x, y)] = stencil(data, width, x, y, alpha);
         }
     }
 }
 
-void apply_stencil_black(float* data, size_t width, size_t height, size_t offset, float alpha) {
-    for (size_t x = 1; x < width-1; x++){
-        for (size_t y = 1 + ((x+offset)%2); y< height-1; y+=2){
-            if(x+ y % 2 == 0){
+
+// Et forsøg på at gøre det selv ("manuelt"), men det er ikke hurtigere end det over
+void apply_stencil_par(float* data, size_t width, size_t height, size_t offset, float alpha) {
+    #pragma omp parallel
+    {
+        size_t n_threads = (size_t) omp_get_max_threads();
+        size_t thread = (size_t) omp_get_thread_num();
+        size_t block_width = (width-2)/ n_threads;
+
+        size_t x_max = thread != n_threads-1 ? (thread+1)*block_width+1 : width-1; //Den sidste blok skal gå til enden, og ikke nødvendigvis være lige så bred som de øvrige.
+
+        for (size_t x = 1+ thread*block_width ; x < x_max; x++){
+            for (size_t y = 1 + ((x+offset)%2); y< height-1; y+=2){
                 data[pos(width, x, y)] = stencil(data, width, x, y, alpha);
             }
         }
-    }
+    }    
 }
+
+
 
 
 float compute_delta(float* data, float* prev, size_t width, size_t height) {
     float res = 0.0;
+    #pragma omp parallel for reduction(+:res)   // for reduction betyder at res skal beskyttes fra at skrives til samtidigt - mega smart
     for (size_t x = 0; x < width; x++){
         for (size_t y = 0; y < height; y++){
             res += fabs(prev[pos(width, x, y)]-data[pos(width, x, y)]);
         }
     }
-
     return res / ((float) width*height);
 }
 
@@ -80,22 +92,8 @@ void run_simulation(size_t width, size_t height, size_t steps, const char* filen
     
     for(; n < steps; n++) {
         memcpy(prev, data, size*sizeof(float));
-        #pragma omp parallel sections
-        {
-            #pragma omp section
-            {
-                apply_stencil_red(data, width, height, n % 2, 0.2f);
-            }
-            #pragma omp section
-            {
-                apply_stencil_black(data, width, height, n % 2, 0.2f);
-            }
-            #pragma omp section
-            {
-                delta = compute_delta(data, prev, width, height);
-            }
-        }
-        #pragma omp barrier
+        apply_stencil(data, width, height, n % 2, 0.2f);
+        delta = compute_delta(data, prev, width, height);
         if (delta < 0.001f)
             break;
     }
