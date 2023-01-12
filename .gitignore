@@ -3,3 +3,5 @@
 *.pyc
 *.o
 *.so
+*
+Makefile

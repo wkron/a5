@@ -56,10 +56,21 @@ void run_simulation(size_t width, size_t height, size_t steps, const char* filen
     float delta = 0.0f;
     size_t n = 0;
 
+    
     for(; n < steps; n++) {
         memcpy(prev, data, size*sizeof(float));
-        apply_stencil(data, width, height, n % 2, 0.2f);
-        delta = compute_delta(data, prev, width, height);
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                apply_stencil(data, width, height, n % 2, 0.2f);
+            }
+            #pragma omp section
+            {
+                delta = compute_delta(data, prev, width, height);
+            }
+        }
+        #pragma omp barrier
         if (delta < 0.001f)
             break;
     }
